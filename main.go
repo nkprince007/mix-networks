@@ -16,6 +16,7 @@ func main() {
 	srv := server.Server{
 		Addr:            ":8080",
 		IdleConnTimeout: time.Second * 15,
+		BufferSize:      1024,
 	}
 
 	go func() {

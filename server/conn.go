@@ -1,6 +1,7 @@
 package server
 
 import (
+	"io"
 	"net"
 	"time"
 )
@@ -8,6 +9,7 @@ import (
 type conn struct {
 	net.Conn
 	IdleTimeout time.Duration
+	BufferSize  int64
 }
 
 func (c *conn) Write(p []byte) (n int, err error) {
@@ -18,7 +20,8 @@ func (c *conn) Write(p []byte) (n int, err error) {
 
 func (c *conn) Read(b []byte) (n int, err error) {
 	c.updateDeadline()
-	n, err = c.Conn.Read(b)
+	r := io.LimitReader(c.Conn, c.BufferSize)
+	n, err = r.Read(b)
 	return
 }
 

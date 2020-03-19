@@ -13,6 +13,7 @@ type Server struct {
 
 	Addr            string
 	IdleConnTimeout time.Duration
+	BufferSize      int64
 
 	listener         net.Listener
 	commenceShutdown bool
@@ -64,6 +65,7 @@ func (srv *Server) ListenAndServe() error {
 		conn := &conn{
 			Conn:        newConn,
 			IdleTimeout: srv.IdleConnTimeout,
+			BufferSize:  srv.BufferSize,
 		}
 		conn.SetDeadline(time.Now().Add(srv.IdleConnTimeout))
 
@@ -92,19 +94,24 @@ func handle(c *conn) error {
 	r := bufio.NewReader(c)
 	w := bufio.NewWriter(c)
 	scanner := bufio.NewScanner(r)
+
+	sc := make(chan bool, 1)
 	deadline := time.After(c.IdleTimeout)
 	for {
+		go func(s chan bool) {
+			s <- scanner.Scan()
+		}(sc)
+
 		select {
 		case <-deadline:
 			return nil
-		default:
-			scanned := scanner.Scan()
+		case scanned := <-sc:
 			if !scanned {
 				if err := scanner.Err(); err != nil {
 					log.Printf("%v(%v)", err, c.RemoteAddr())
 					return err
 				}
-				break
+				return nil
 			}
 			w.WriteString(scanner.Text() + "\n")
 			w.Flush()
