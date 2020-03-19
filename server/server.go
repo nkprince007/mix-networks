@@ -20,7 +20,7 @@ func (srv *Server) ListenAndServe() error {
 		addr = "8000"
 	}
 
-	log.Printf("StartingTTCP server on %v\n", addr)
+	log.Printf("Starting TCP server on %v\n", addr)
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		return err
