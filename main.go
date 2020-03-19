@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/nkprince007/mix-networks/server"
 )
@@ -12,7 +13,11 @@ func main() {
 	done := make(chan os.Signal, 1)
 	go signal.Notify(done, os.Interrupt, os.Kill)
 
-	srv := server.Server{Addr: ":8080"}
+	srv := server.Server{
+		Addr:            ":8080",
+		IdleConnTimeout: time.Second * 15,
+	}
+
 	go func() {
 		err := srv.ListenAndServe()
 		if err != nil {

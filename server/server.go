@@ -10,7 +10,10 @@ import (
 
 type Server struct {
 	sync.WaitGroup
-	Addr             string
+
+	Addr            string
+	IdleConnTimeout time.Duration
+
 	listener         net.Listener
 	commenceShutdown bool
 	mu               sync.Mutex
@@ -44,7 +47,7 @@ func (srv *Server) ListenAndServe() error {
 		srv.mu.Unlock()
 
 		listener.SetDeadline(time.Now().Add(1e9))
-		conn, err := listener.AcceptTCP()
+		newConn, err := listener.AcceptTCP()
 
 		if err != nil {
 			netOpError, ok := err.(*net.OpError)
@@ -56,7 +59,14 @@ func (srv *Server) ListenAndServe() error {
 			continue
 		}
 
-		log.Printf("accepted connection from: %v\n", conn.RemoteAddr())
+		log.Printf("accepted connection from: %v\n", newConn.RemoteAddr())
+
+		conn := &conn{
+			Conn:        newConn,
+			IdleTimeout: srv.IdleConnTimeout,
+		}
+		conn.SetDeadline(time.Now().Add(srv.IdleConnTimeout))
+
 		srv.Add(1)
 		go func() {
 			srv.Done()
@@ -73,26 +83,32 @@ func (srv *Server) ShutDown() error {
 	return srv.listener.Close()
 }
 
-func handle(conn net.Conn) error {
+func handle(c *conn) error {
 	defer func() {
-		log.Printf("Closing connection from: %v\n", conn.RemoteAddr())
-		conn.Close()
+		log.Printf("Closing connection from: %v\n", c.RemoteAddr())
+		c.Close()
 	}()
 
-	r := bufio.NewReader(conn)
-	w := bufio.NewWriter(conn)
+	r := bufio.NewReader(c)
+	w := bufio.NewWriter(c)
 	scanner := bufio.NewScanner(r)
+	deadline := time.After(c.IdleTimeout)
 	for {
-		scanned := scanner.Scan()
-		if !scanned {
-			if err := scanner.Err(); err != nil {
-				log.Printf("%v(%v)", err, conn.RemoteAddr())
-				return err
+		select {
+		case <-deadline:
+			return nil
+		default:
+			scanned := scanner.Scan()
+			if !scanned {
+				if err := scanner.Err(); err != nil {
+					log.Printf("%v(%v)", err, c.RemoteAddr())
+					return err
+				}
+				break
 			}
-			break
+			w.WriteString(scanner.Text() + "\n")
+			w.Flush()
+			deadline = time.After(c.IdleTimeout)
 		}
-		w.WriteString(scanner.Text() + "\n")
-		w.Flush()
 	}
-	return nil
 }
