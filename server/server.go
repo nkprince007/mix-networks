@@ -5,9 +5,11 @@ import (
 	"log"
 	"net"
 	"sync"
+	"time"
 )
 
 type Server struct {
+	sync.WaitGroup
 	Addr             string
 	listener         net.Listener
 	commenceShutdown bool
@@ -36,19 +38,31 @@ func (srv *Server) ListenAndServe() error {
 	for {
 		srv.mu.Lock()
 		if srv.commenceShutdown {
-			break
+			srv.Wait()
+			return nil
 		}
 		srv.mu.Unlock()
 
+		listener.SetDeadline(time.Now().Add(1e9))
 		conn, err := listener.AcceptTCP()
+
 		if err != nil {
+			netOpError, ok := err.(*net.OpError)
+			if ok && (netOpError.Err.Error() == "use of closed network connection" || netOpError.Timeout()) {
+				continue
+			}
+
 			log.Printf("error accepting connection: %v\n", err)
 			continue
 		}
+
 		log.Printf("accepted connection from: %v\n", conn.RemoteAddr())
-		handle(conn)
+		srv.Add(1)
+		go func() {
+			srv.Done()
+			handle(conn)
+		}()
 	}
-	return nil
 }
 
 func (srv *Server) ShutDown() error {
