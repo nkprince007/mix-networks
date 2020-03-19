@@ -18,6 +18,7 @@ type Server struct {
 	listener         net.Listener
 	commenceShutdown bool
 	mu               sync.Mutex
+	conns            []*conn
 }
 
 func (srv *Server) ListenAndServe() error {
@@ -62,17 +63,18 @@ func (srv *Server) ListenAndServe() error {
 
 		log.Printf("accepted connection from: %v\n", newConn.RemoteAddr())
 
-		conn := &conn{
+		c := &conn{
 			Conn:        newConn,
 			IdleTimeout: srv.IdleConnTimeout,
 			BufferSize:  srv.BufferSize,
 		}
-		conn.SetDeadline(time.Now().Add(srv.IdleConnTimeout))
+		c.SetDeadline(time.Now().Add(srv.IdleConnTimeout))
 
 		srv.Add(1)
+		srv.trackConnection(c)
 		go func() {
+			srv.handle(c)
 			srv.Done()
-			handle(conn)
 		}()
 	}
 }
@@ -85,10 +87,32 @@ func (srv *Server) ShutDown() error {
 	return srv.listener.Close()
 }
 
-func handle(c *conn) error {
+func (srv *Server) trackConnection(c *conn) {
+	defer srv.mu.Unlock()
+	srv.mu.Lock()
+	if srv.conns == nil {
+		srv.conns = make([]*conn, 0)
+	}
+	srv.conns = append(srv.conns, c)
+}
+
+func (srv *Server) untrackConnection(c *conn) {
+	defer srv.mu.Unlock()
+	srv.mu.Lock()
+	for i, connection := range srv.conns {
+		if connection == c {
+			srv.conns[i] = srv.conns[len(srv.conns)-1]
+			srv.conns[len(srv.conns)-1] = nil
+			srv.conns = srv.conns[:len(srv.conns)-1]
+		}
+	}
+}
+
+func (srv *Server) handle(c *conn) error {
 	defer func() {
 		log.Printf("Closing connection from: %v\n", c.RemoteAddr())
 		c.Close()
+		srv.untrackConnection(c)
 	}()
 
 	r := bufio.NewReader(c)
