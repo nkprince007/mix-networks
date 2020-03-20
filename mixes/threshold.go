@@ -44,6 +44,8 @@ func (m *ThresholdMix) AddMessage(msg Message) {
 		} else {
 			m.mu.Unlock()
 		}
+	default:
+		m.Forward()
 	}
 }
 
