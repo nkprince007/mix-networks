@@ -6,3 +6,5 @@ type Mix interface {
 	CleanUp()
 	GetMessages() []Message
 }
+
+type Message int

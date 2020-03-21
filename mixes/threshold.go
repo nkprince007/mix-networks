@@ -5,14 +5,12 @@ import (
 	"sync"
 )
 
-type Message int
-
 type ThresholdMix struct {
 	Size int
 
-	mu   sync.Mutex
-	msgs chan Message
-	done chan interface{}
+	mu          sync.Mutex
+	msgsChannel chan Message
+	done        chan interface{}
 }
 
 func (m *ThresholdMix) init() {
@@ -20,13 +18,13 @@ func (m *ThresholdMix) init() {
 		m.done = make(chan interface{})
 	}
 
-	if m.msgs == nil {
-		m.msgs = make(chan Message, m.Size)
+	if m.msgsChannel == nil {
+		m.msgsChannel = make(chan Message, m.Size)
 	}
 }
 
 func (m *ThresholdMix) Forward() {
-	close(m.msgs)
+	close(m.msgsChannel)
 	fmt.Println("Channel is full")
 	m.done <- nil
 }
@@ -38,8 +36,8 @@ func (m *ThresholdMix) AddMessage(msg Message) {
 	fmt.Println("received msg: ", msg)
 
 	select {
-	case m.msgs <- msg:
-		if len(m.msgs) == cap(m.msgs) {
+	case m.msgsChannel <- msg:
+		if len(m.msgsChannel) == cap(m.msgsChannel) {
 			m.Forward()
 		} else {
 			m.mu.Unlock()
@@ -51,7 +49,7 @@ func (m *ThresholdMix) AddMessage(msg Message) {
 
 func (m *ThresholdMix) CleanUp() {
 	fmt.Println("Cleanup complete...")
-	close(m.msgs)
+	close(m.msgsChannel)
 	close(m.done)
 }
 
@@ -61,11 +59,11 @@ func (m *ThresholdMix) GetMessages() (msgs []Message) {
 	select {
 	case <-m.done:
 		defer m.mu.Unlock()
-		for msg := range m.msgs {
+		for msg := range m.msgsChannel {
 			msgs = append(msgs, msg)
 		}
 
-		m.msgs = make(chan Message, m.Size)
+		m.msgsChannel = make(chan Message, m.Size)
 		msgs = shuffle(msgs)
 	}
 	return
