@@ -2,6 +2,7 @@ package mixes
 
 import (
 	"math/rand"
+	"strconv"
 	"time"
 )
 
@@ -34,4 +35,36 @@ func compareContents(a, b []Message) bool {
 		}
 	}
 	return true
+}
+
+func makeRange(min, max int) []Message {
+	a := make([]Message, max-min+1)
+	for i := range a {
+		a[i] = Message(min + i)
+	}
+	return a
+}
+
+func getIntervals(timeBufferInMillis time.Duration, percentages []int) []time.Duration {
+	var intervals []time.Duration
+	for _, p := range percentages {
+		intervals = append(intervals, (timeBufferInMillis/100)*time.Duration(p))
+	}
+	return intervals
+}
+
+func sum(units []time.Duration) time.Duration {
+	var sum time.Duration
+	for _, unit := range units {
+		sum += unit
+	}
+	return sum
+}
+
+func messagesToString(pool []Message) string {
+	stmt := ""
+	for _, msg := range pool {
+		stmt += (" " + strconv.Itoa(int(msg)))
+	}
+	return stmt
 }
