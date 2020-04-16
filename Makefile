@@ -1,7 +1,14 @@
-BIN := bin
+BIN		:= bin
+GOCMD	:=go
+GOBUILD	:=$(GOCMD) build
+GOCLEAN	:=$(GOCMD) clean
 
-.PHONY: all
+.PHONY: all clean
 all: proxy
 
 proxy: proxy/proxy.go
-	go build -o $(BIN)/proxy -v $^
+	CGO_ENABLED=0 GOARCH=amd64 $(GOBUILD) -o $(BIN)/proxy -v $^
+
+clean:
+	$(GOCLEAN)
+	rm -f $(BIN)/proxy
