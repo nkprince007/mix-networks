@@ -29,12 +29,12 @@ func parseArguments(args []string) (port int, privKey string, err error) {
 		return
 	}
 
-	port, err = strconv.Atoi(args[0])
+	port, err = strconv.Atoi(args[1])
 	if err != nil {
 		return
 	}
 
-	privKey = args[1]
+	privKey = args[0]
 	fileInfo, err := os.Stat(privKey)
 	if err == nil && fileInfo.IsDir() {
 		err = fmt.Errorf("Expected file, got directory instead at %s", privKey)
