@@ -9,11 +9,12 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/nkprince007/mix-networks/mixes"
 )
 
-const privateKeyPath = "./proxy-privkey.pem"
+const privateKeyPath = "../keys/proxy/private.pem"
 
 func usage() {
 	programName := os.Args[0]
@@ -85,6 +86,13 @@ func getMix() mixes.MixNew {
 	return mix
 }
 
+func getTimedMix() mixes.MixNew {
+	mixTimeBufferSize := 5000 * time.Millisecond
+	mix := &mixes.TimedMix{TimeBufferMillis: mixTimeBufferSize}
+	mix.Init()
+	return mix
+}
+
 func main() {
 	port, err := parseArguments(os.Args[1:])
 	//TODO: choose mix strategy based on input argument
@@ -95,7 +103,7 @@ func main() {
 	addr := "127.0.0.1:" + strconv.Itoa(port)
 	fmt.Printf("Starting proxy using private key: %s at %s\n", privateKeyPath, addr)
 	privKey := mixes.ReadPrivateKey(privateKeyPath)
-	mix := getMix()
+	mix := getTimedMix()
 	proxy := Proxy{mix, privKey, addr}
 	proxy.run()
 }

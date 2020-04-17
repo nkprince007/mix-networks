@@ -32,8 +32,8 @@ func sendMessage(message string, proxyKey, recipientKey *rsa.PublicKey) {
 func main() {
 	tick := time.Tick(messageInterval)
 	counter := 0
-	recipientPublicKey := mixes.ReadPublicKey("./recipient-pubkey.pem")
-	proxyPublicKey := mixes.ReadPublicKey("./proxy-pubkey.pem")
+	recipientPublicKey := mixes.ReadPublicKey("../keys/recipient/public.pem")
+	proxyPublicKey := mixes.ReadPublicKey("../keys/proxy/public.pem")
 
 	for {
 		select {
