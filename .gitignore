@@ -1,1 +1,3 @@
 bin
+mixes/test_private.pem
+mixes/test_public.pem
