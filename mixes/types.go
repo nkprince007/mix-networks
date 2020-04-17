@@ -1,12 +1,5 @@
 package mixes
 
-type Mix interface {
-	Forward()
-	AddMessage(EncryptedMessage)
-	CleanUp()
-	GetMessages() []EncryptedMessage
-}
-
 type Message struct {
 	Content string `json:"content"`
 	Addr    string `json:"address"`
@@ -22,7 +15,7 @@ type MessageBatch struct {
 	Messages []EncryptedMessage
 }
 
-type MixNew interface {
+type Mix interface {
 	AddMessage(EncryptedMessage)
 	ReadyToForwardChannel() chan MessageBatch
 	Init()
