@@ -5,8 +5,6 @@ import (
 	"sync"
 )
 
-type Message int
-
 type ThresholdMix struct {
 	Size int
 

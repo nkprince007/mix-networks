@@ -2,13 +2,18 @@ package mixes
 
 type Mix interface {
 	Forward()
-	AddMessage(Message)
+	AddMessage(EncryptedMessage)
 	CleanUp()
-	GetMessages() []Message
+	GetMessages() []EncryptedMessage
+}
+
+type Message struct {
+	Content string `json:"content"`
+	Addr    string `json:"address"`
 }
 
 type EncryptedMessage struct {
-	Content  []byte `json:"content"`
+	Data     []byte `json:"data"`
 	Nonce    []byte `json:"nonce"`
 	Password []byte `json:"password"`
 }

@@ -7,6 +7,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"io"
 	"io/ioutil"
@@ -45,7 +46,12 @@ func ReadPrivateKey(filePath string) *rsa.PrivateKey {
 }
 
 // EncryptWithPublicKey encrypts data with public key
-func EncryptWithPublicKey(plaintext []byte, pub *rsa.PublicKey) EncryptedMessage {
+func EncryptWithPublicKey(msg *Message, pub *rsa.PublicKey) EncryptedMessage {
+	plaintext, err := json.Marshal(msg)
+	if err != nil {
+		log.Fatal("JSON Encoding error:", plaintext, err)
+	}
+
 	key := make([]byte, 32)
 	if _, err := io.ReadFull(rand.Reader, key); err != nil {
 		log.Fatal(err.Error())
@@ -73,16 +79,16 @@ func EncryptWithPublicKey(plaintext []byte, pub *rsa.PublicKey) EncryptedMessage
 	}
 
 	return EncryptedMessage{
-		Content:  ciphertext,
+		Data:     ciphertext,
 		Nonce:    nonce,
 		Password: encrypted,
 	}
 }
 
 // DecryptWithPrivateKey decrypts data with private key
-func DecryptWithPrivateKey(msg *EncryptedMessage, priv *rsa.PrivateKey) []byte {
+func DecryptWithPrivateKey(msg *EncryptedMessage, priv *rsa.PrivateKey) Message {
 	key := msg.Password
-	ciphertext := msg.Content
+	ciphertext := msg.Data
 	nonce := msg.Nonce
 
 	decrypted, err := rsa.DecryptOAEP(sha256.New(), rand.Reader, priv, key, nil)
@@ -104,5 +110,11 @@ func DecryptWithPrivateKey(msg *EncryptedMessage, priv *rsa.PrivateKey) []byte {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	return deciphered
+
+	var message Message
+	err = json.Unmarshal(deciphered, &message)
+	if err != nil {
+		log.Fatal("JSON decoding error:", err)
+	}
+	return message
 }

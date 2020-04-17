@@ -1,32 +1,23 @@
 package mixes
 
 import (
-	"encoding/json"
 	"testing"
 )
 
 func TestEncryption(t *testing.T) {
 	mixPublicKey := ReadPublicKey("./test_public.pem")
 	mixPrivateKey := ReadPrivateKey("./test_private.pem")
-	message := []byte("This is a test message")
+	message := Message{"This is a test message", ":8000"}
 
-	encryptedMessage := EncryptWithPublicKey(message, mixPublicKey)
-	e, err := json.Marshal(&encryptedMessage)
-	if err != nil {
-		t.Error(err)
-	}
-	encryptedMessage1 := EncryptWithPublicKey(e, mixPublicKey)
+	firstLayerEncMsg := EncryptWithPublicKey(&message, mixPublicKey)
+	tmpMsg := firstLayerEncMsg.Wrap("hello")
+	secondLayerEncMsg := EncryptWithPublicKey(&tmpMsg, mixPublicKey)
 
-	var decryptedMessage1 EncryptedMessage
-	e = DecryptWithPrivateKey(&encryptedMessage1, mixPrivateKey)
-	err = json.Unmarshal(e, &decryptedMessage1)
-	if err != nil {
-		t.Error(err)
-	}
+	decryptedMessage1 := DecryptWithPrivateKey(&secondLayerEncMsg, mixPrivateKey)
+	firstLayerEncMsg = decryptedMessage1.Unwrap()
+	decryptedMessage := DecryptWithPrivateKey(&firstLayerEncMsg, mixPrivateKey)
 
-	decryptedMessage := DecryptWithPrivateKey(&decryptedMessage1, mixPrivateKey)
-
-	if string(message) != string(decryptedMessage) {
+	if message != decryptedMessage {
 		t.Error("Encrypted and decrypted messages are not the same:", message, decryptedMessage)
 	}
 }
