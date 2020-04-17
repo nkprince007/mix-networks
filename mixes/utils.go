@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"math/rand"
+	"net"
 	"time"
 )
 
@@ -23,6 +24,16 @@ func (msg *Message) Unwrap() EncryptedMessage {
 		log.Fatal(err)
 	}
 	return encMsg
+}
+
+func SendMessage(msg *EncryptedMessage, addr string) {
+	// sending request to proxy
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		log.Fatalf("Connecting to %s through tcp failed\n", addr)
+	}
+	defer conn.Close()
+	err = json.NewEncoder(conn).Encode(&msg)
 }
 
 func shuffle(arr []Message) []Message {

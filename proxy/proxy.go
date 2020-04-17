@@ -33,30 +33,53 @@ func parseArguments(args []string) (port int, err error) {
 	return
 }
 
-func handleRequest(conn net.Conn, privKey *rsa.PrivateKey, mix mixes.MixNew) {
+type Proxy struct {
+	mix     mixes.MixNew
+	privKey *rsa.PrivateKey
+	addr    string
+}
+
+func (p *Proxy) run() {
+
+	ln, err := net.Listen("tcp", p.addr)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	go p.handleReqsReadyToForward(p.mix.ReadyToForwardChannel())
+
+	for {
+		conn, err := ln.Accept()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		go p.handleRequest(conn)
+	}
+}
+
+func (p *Proxy) handleRequest(conn net.Conn) {
 	encryptedMessage := &mixes.EncryptedMessage{}
 	json.NewDecoder(conn).Decode(encryptedMessage)
+	p.mix.AddMessage(*encryptedMessage)
+}
 
-	msg := mixes.DecryptWithPrivateKey(encryptedMessage, privKey)
-	unwrappedMessage := msg.Unwrap()
-	fmt.Println(unwrappedMessage)
-	mix.AddMessage(unwrappedMessage)
+func (p *Proxy) forwardMessage(encryptedMessage mixes.EncryptedMessage) {
+	decryptedMsg := mixes.DecryptWithPrivateKey(&encryptedMessage, p.privKey)
+	recipientAddr := decryptedMsg.Addr
+	recipientMessage := decryptedMsg.Unwrap()
+	mixes.SendMessage(&recipientMessage, recipientAddr)
+}
+
+func (p *Proxy) handleReqsReadyToForward(readyToForwardChannel chan mixes.MessageBatch) {
+	for msgBatch := range readyToForwardChannel {
+		for _, msg := range msgBatch.Messages {
+			p.forwardMessage(msg)
+		}
+	}
 }
 
 func getMix() mixes.MixNew {
-
-}
-
-func forwardMessage(msg mixes.EncryptedMessage) {
-	//TODO: forward to recipient here
-}
-
-func handleReqsReadyToForward(readyToForwardChannel chan mixes.MessageBatch) {
-	for msgBatch := range readyToForwardChannel {
-		for _, msg := range msgBatch.Messages {
-			forwardMessage(msg)
-		}
-	}
+	return mixes.ThresholdMix{Size: 4}
 }
 
 func main() {
@@ -69,20 +92,7 @@ func main() {
 	addr := "127.0.0.1:" + string(port)
 	fmt.Printf("Starting proxy using private key: %s at %s\n", privateKeyPath, addr)
 	privKey := mixes.ReadPrivateKey(privateKeyPath)
-
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
 	mix := getMix()
-	go handleReqsReadyToForward(mix.ReadyToForwardChannel())
-
-	for {
-		conn, err := ln.Accept()
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-		go handleRequest(conn, privKey, mix)
-	}
+	proxy := Proxy{mix, privKey, addr}
+	proxy.run()
 }

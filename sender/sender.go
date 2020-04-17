@@ -2,10 +2,7 @@ package main
 
 import (
 	"crypto/rsa"
-	"encoding/json"
 	"fmt"
-	"log"
-	"net"
 	"strconv"
 	"time"
 
@@ -28,13 +25,7 @@ func sendMessage(message string, proxyKey, recipientKey *rsa.PublicKey) {
 	proxyEncMsg := mixes.EncryptWithPublicKey(&msg, proxyKey)
 
 	// sending request to proxy
-	conn, err := net.Dial("tcp", proxyAddr)
-	if err != nil {
-		log.Fatalf("Connecting to %s through tcp failed\n", proxyAddr)
-	}
-	defer conn.Close()
-	err = json.NewEncoder(conn).Encode(&proxyEncMsg)
-
+	mixes.SendMessage(&proxyEncMsg, proxyAddr)
 	fmt.Println("Sent request: ", string(msg.Content))
 }
 

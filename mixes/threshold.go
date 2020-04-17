@@ -1,70 +1,44 @@
 package mixes
 
 import (
-	"fmt"
 	"sync"
 )
 
 type ThresholdMix struct {
 	Size int
 
-	mu   sync.Mutex
-	msgs chan Message
-	done chan interface{}
+	mu                    sync.Mutex
+	inputMsgs             []EncryptedMessage
+	readyToForwardChannel chan MessageBatch
 }
 
-func (m *ThresholdMix) init() {
-	if m.done == nil {
-		m.done = make(chan interface{})
+func (m ThresholdMix) init() {
+
+	if m.inputMsgs == nil {
+		m.inputMsgs = make([]EncryptedMessage, 0)
 	}
 
-	if m.msgs == nil {
-		m.msgs = make(chan Message, m.Size)
+	if m.readyToForwardChannel == nil {
+		m.readyToForwardChannel = make(chan MessageBatch, 200) //TODO: Arbitrary size, should we make it configurable?
 	}
 }
 
-func (m *ThresholdMix) Forward() {
-	close(m.msgs)
-	fmt.Println("Channel is full")
-	m.done <- nil
+func (m ThresholdMix) ReadyToForwardChannel() chan MessageBatch {
+	return m.readyToForwardChannel
 }
 
-func (m *ThresholdMix) AddMessage(msg Message) {
+func (m ThresholdMix) Forward() {
+	m.readyToForwardChannel <- MessageBatch{Messages: m.inputMsgs}
+	m.inputMsgs = make([]EncryptedMessage, 0)
+}
+
+func (m ThresholdMix) AddMessage(msg EncryptedMessage) {
 	m.init()
 
 	m.mu.Lock()
-	fmt.Println("received msg: ", msg)
-
-	select {
-	case m.msgs <- msg:
-		if len(m.msgs) == cap(m.msgs) {
-			m.Forward()
-		} else {
-			m.mu.Unlock()
-		}
-	default:
+	m.inputMsgs = append(m.inputMsgs, msg)
+	if len(m.inputMsgs) == m.Size {
 		m.Forward()
 	}
-}
-
-func (m *ThresholdMix) CleanUp() {
-	fmt.Println("Cleanup complete...")
-	close(m.msgs)
-	close(m.done)
-}
-
-func (m *ThresholdMix) GetMessages() (msgs []Message) {
-	m.init()
-
-	select {
-	case <-m.done:
-		defer m.mu.Unlock()
-		for msg := range m.msgs {
-			msgs = append(msgs, msg)
-		}
-
-		m.msgs = make(chan Message, m.Size)
-		msgs = shuffle(msgs)
-	}
-	return
+	m.mu.Unlock()
 }
