@@ -93,6 +93,18 @@ func getTimedMix() mixes.MixNew {
 	return mix
 }
 
+func getCottrellMix() mixes.MixNew {
+	mixTimeBufferSize := 5000 * time.Millisecond
+	mix := &mixes.CottrellMix{
+		TimeBufferMillis: mixTimeBufferSize,
+		MinimumPoolSize:  3,
+		Threshold:        5,
+		Fraction:         float32(0.5),
+	}
+	mix.Init()
+	return mix
+}
+
 func main() {
 	port, err := parseArguments(os.Args[1:])
 	//TODO: choose mix strategy based on input argument
@@ -103,7 +115,7 @@ func main() {
 	addr := "127.0.0.1:" + strconv.Itoa(port)
 	fmt.Printf("Starting proxy using private key: %s at %s\n", privateKeyPath, addr)
 	privKey := mixes.ReadPrivateKey(privateKeyPath)
-	mix := getTimedMix()
+	mix := getCottrellMix()
 	proxy := Proxy{mix, privKey, addr}
 	proxy.run()
 }
