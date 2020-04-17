@@ -36,7 +36,7 @@ func SendMessage(msg *EncryptedMessage, addr string) {
 	err = json.NewEncoder(conn).Encode(&msg)
 }
 
-func shuffle(arr []Message) []Message {
+func shuffle(arr []EncryptedMessage) []EncryptedMessage {
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(
 		len(arr),

@@ -13,7 +13,7 @@ import (
 	"github.com/nkprince007/mix-networks/mixes"
 )
 
-const privateKeyPath = "./proxy/proxy-privkey.pem"
+const privateKeyPath = "./proxy-privkey.pem"
 
 func usage() {
 	programName := os.Args[0]
@@ -58,6 +58,7 @@ func (p *Proxy) run() {
 }
 
 func (p *Proxy) handleRequest(conn net.Conn) {
+	fmt.Println("Request recieved")
 	encryptedMessage := &mixes.EncryptedMessage{}
 	json.NewDecoder(conn).Decode(encryptedMessage)
 	p.mix.AddMessage(*encryptedMessage)
@@ -79,7 +80,9 @@ func (p *Proxy) handleReqsReadyToForward(readyToForwardChannel chan mixes.Messag
 }
 
 func getMix() mixes.MixNew {
-	return mixes.ThresholdMix{Size: 4}
+	mix := &mixes.ThresholdMix{Size: 4}
+	mix.Init()
+	return mix
 }
 
 func main() {
@@ -89,7 +92,7 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	addr := "127.0.0.1:" + string(port)
+	addr := "127.0.0.1:" + strconv.Itoa(port)
 	fmt.Printf("Starting proxy using private key: %s at %s\n", privateKeyPath, addr)
 	privKey := mixes.ReadPrivateKey(privateKeyPath)
 	mix := getMix()

@@ -26,20 +26,23 @@ func sendMessage(message string, proxyKey, recipientKey *rsa.PublicKey) {
 
 	// sending request to proxy
 	mixes.SendMessage(&proxyEncMsg, proxyAddr)
-	fmt.Println("Sent request: ", string(msg.Content))
+	fmt.Println("Sent request: " + message)
 }
 
 func main() {
 	tick := time.Tick(messageInterval)
 	counter := 0
-	recipientPublicKey := mixes.ReadPublicKey("./sender/recipient-pubkey.pem")
-	proxyPublicKey := mixes.ReadPublicKey("./sender/proxy-pubkey.pem")
+	recipientPublicKey := mixes.ReadPublicKey("./recipient-pubkey.pem")
+	proxyPublicKey := mixes.ReadPublicKey("./proxy-pubkey.pem")
 
 	for {
 		select {
 		case <-tick:
 			counter++
 			go sendMessage(strconv.Itoa(counter), proxyPublicKey, recipientPublicKey)
+			if counter == 5 {
+				break
+			}
 		}
 	}
 }

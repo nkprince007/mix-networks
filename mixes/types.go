@@ -25,6 +25,7 @@ type MessageBatch struct {
 type MixNew interface {
 	AddMessage(EncryptedMessage)
 	ReadyToForwardChannel() chan MessageBatch
+	Init()
 }
 
 type ReqSender interface {

@@ -12,10 +12,9 @@ type ThresholdMix struct {
 	readyToForwardChannel chan MessageBatch
 }
 
-func (m ThresholdMix) init() {
-
+func (m *ThresholdMix) Init() {
 	if m.inputMsgs == nil {
-		m.inputMsgs = make([]EncryptedMessage, 0)
+		m.inputMsgs = []EncryptedMessage{}
 	}
 
 	if m.readyToForwardChannel == nil {
@@ -23,18 +22,16 @@ func (m ThresholdMix) init() {
 	}
 }
 
-func (m ThresholdMix) ReadyToForwardChannel() chan MessageBatch {
+func (m *ThresholdMix) ReadyToForwardChannel() chan MessageBatch {
 	return m.readyToForwardChannel
 }
 
-func (m ThresholdMix) Forward() {
-	m.readyToForwardChannel <- MessageBatch{Messages: m.inputMsgs}
-	m.inputMsgs = make([]EncryptedMessage, 0)
+func (m *ThresholdMix) Forward() {
+	m.readyToForwardChannel <- MessageBatch{Messages: shuffle(m.inputMsgs)}
+	m.inputMsgs = []EncryptedMessage{}
 }
 
-func (m ThresholdMix) AddMessage(msg EncryptedMessage) {
-	m.init()
-
+func (m *ThresholdMix) AddMessage(msg EncryptedMessage) {
 	m.mu.Lock()
 	m.inputMsgs = append(m.inputMsgs, msg)
 	if len(m.inputMsgs) == m.Size {
