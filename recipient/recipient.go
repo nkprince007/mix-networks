@@ -13,7 +13,7 @@ import (
 	"github.com/nkprince007/mix-networks/mixes"
 )
 
-const privateKeyPath = "../keys/recipient/private.pem"
+const privateKeyPath = "../.keys/recipient/private.pem"
 
 func usage() {
 	programName := os.Args[0]
