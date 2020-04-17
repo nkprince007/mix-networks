@@ -33,19 +33,35 @@ func parseArguments(args []string) (port int, err error) {
 	return
 }
 
-func handleRequest(conn net.Conn, privKey *rsa.PrivateKey) {
+func handleRequest(conn net.Conn, privKey *rsa.PrivateKey, mix mixes.MixNew) {
 	encryptedMessage := &mixes.EncryptedMessage{}
 	json.NewDecoder(conn).Decode(encryptedMessage)
 
 	msg := mixes.DecryptWithPrivateKey(encryptedMessage, privKey)
 	unwrappedMessage := msg.Unwrap()
 	fmt.Println(unwrappedMessage)
+	mix.AddMessage(unwrappedMessage)
+}
 
-	// TODO: Add it to mix and forward when mix conditions are met
+func getMix() mixes.MixNew {
+
+}
+
+func forwardMessage(msg mixes.EncryptedMessage) {
+	//TODO: forward to recipient here
+}
+
+func handleReqsReadyToForward(readyToForwardChannel chan []MessageBatch) {
+	for msgBatch := range readyToForwardChannel {
+		for msg := range msgBatch {
+			forwardMessage(msg)
+		}
+	}
 }
 
 func main() {
 	port, err := parseArguments(os.Args[1:])
+	//TODO: choose mix strategy based on input argument
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -59,11 +75,14 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
+	mix := getMix()
+	go handleReqsReadyToForward(mix.readyToForwardChannel())
+
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
 			log.Fatal(err.Error())
 		}
-		go handleRequest(conn, privKey)
+		go handleRequest(conn, privKey, mix)
 	}
 }

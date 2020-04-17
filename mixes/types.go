@@ -23,6 +23,7 @@ type MessageBatch struct {
 }
 
 type MixNew interface {
+	name(EncryptedMessage)
 	AddMessage(EncryptedMessage)
 	readyToForwardChannel() chan []MessageBatch
 }
