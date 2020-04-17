@@ -9,7 +9,6 @@ import (
 	"net"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/nkprince007/mix-networks/mixes"
 )
