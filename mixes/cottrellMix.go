@@ -53,7 +53,7 @@ func (m *CottrellMix) ReadyToForwardChannel() chan MessageBatch {
 func (m *CottrellMix) Forward() {
 	m.mu.Lock()
 	fmt.Println("Forwarding messages")
-	n := int(m.Fraction * float32(len(m.inputMsgs)))
+	n := int(m.Fraction * float32(len(m.inputMsgs)-m.MinimumPoolSize))
 	fmt.Println("n is " + strconv.Itoa(n))
 	m.inputMsgs = shuffle(m.inputMsgs)
 	m.readyToForwardChannel <- MessageBatch{Messages: m.inputMsgs[len(m.inputMsgs)-n:]}
