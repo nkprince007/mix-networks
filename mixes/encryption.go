@@ -1,11 +1,14 @@
 package mixes
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha512"
+	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
+	"io"
 	"io/ioutil"
 	"log"
 )
@@ -42,15 +45,64 @@ func ReadPrivateKey(filePath string) *rsa.PrivateKey {
 }
 
 // EncryptWithPublicKey encrypts data with public key
-func EncryptWithPublicKey(msg []byte, pub *rsa.PublicKey) []byte {
-	hash := sha512.New()
-	ciphertext, _ := rsa.EncryptOAEP(hash, rand.Reader, pub, msg, nil)
-	return ciphertext
+func EncryptWithPublicKey(plaintext []byte, pub *rsa.PublicKey) EncryptedMessage {
+	key := make([]byte, 32)
+	if _, err := io.ReadFull(rand.Reader, key); err != nil {
+		log.Fatal(err.Error())
+	}
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	aesgcm, err := cipher.NewGCM(block)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	nonce := make([]byte, aesgcm.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		log.Fatal(err.Error())
+	}
+
+	ciphertext := aesgcm.Seal(nil, nonce, plaintext, nil)
+	encrypted, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, pub, key, nil)
+	if err != nil {
+		log.Fatalln("encryption error:", err.Error())
+	}
+
+	return EncryptedMessage{
+		Content:  ciphertext,
+		Nonce:    nonce,
+		Password: encrypted,
+	}
 }
 
 // DecryptWithPrivateKey decrypts data with private key
-func DecryptWithPrivateKey(ciphertext []byte, priv *rsa.PrivateKey) []byte {
-	hash := sha512.New()
-	plaintext, _ := rsa.DecryptOAEP(hash, rand.Reader, priv, ciphertext, nil)
-	return plaintext
+func DecryptWithPrivateKey(msg *EncryptedMessage, priv *rsa.PrivateKey) []byte {
+	key := msg.Password
+	ciphertext := msg.Content
+	nonce := msg.Nonce
+
+	decrypted, err := rsa.DecryptOAEP(sha256.New(), rand.Reader, priv, key, nil)
+	if err != nil {
+		log.Fatalln("decryption error:", err.Error())
+	}
+
+	block, err := aes.NewCipher(decrypted)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	aesgcm, err := cipher.NewGCM(block)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	deciphered, err := aesgcm.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	return deciphered
 }

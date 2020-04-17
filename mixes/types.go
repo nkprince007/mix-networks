@@ -8,8 +8,9 @@ type Mix interface {
 }
 
 type EncryptedMessage struct {
-	Content  string `json:"content"`
-	Password string `json:"password"`
+	Content  []byte `json:"content"`
+	Nonce    []byte `json:"nonce"`
+	Password []byte `json:"password"`
 }
 
 type MessageBatch struct {
