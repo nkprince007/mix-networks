@@ -35,7 +35,7 @@ func parseArguments(args []string) (port int, err error) {
 }
 
 type Proxy struct {
-	mix     mixes.MixNew
+	mix     mixes.Mix
 	privKey *rsa.PrivateKey
 	addr    string
 }
@@ -78,31 +78,6 @@ func (p *Proxy) handleReqsReadyToForward(readyToForwardChannel chan mixes.Messag
 			p.forwardMessage(msg)
 		}
 	}
-}
-
-func getMix() mixes.MixNew {
-	mix := &mixes.ThresholdMix{Size: 4}
-	mix.Init()
-	return mix
-}
-
-func getTimedMix() mixes.MixNew {
-	mixTimeBufferSize := 5000 * time.Millisecond
-	mix := &mixes.TimedMix{TimeBufferMillis: mixTimeBufferSize}
-	mix.Init()
-	return mix
-}
-
-func getCottrellMix() mixes.MixNew {
-	mixTimeBufferSize := 5000 * time.Millisecond
-	mix := &mixes.CottrellMix{
-		TimeBufferMillis: mixTimeBufferSize,
-		MinimumPoolSize:  3,
-		Threshold:        5,
-		Fraction:         float32(0.5),
-	}
-	mix.Init()
-	return mix
 }
 
 func main() {
