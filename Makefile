@@ -4,14 +4,14 @@ GOBUILD	:=$(GOCMD) build
 GOCLEAN	:=$(GOCMD) clean
 GOTEST	:=$(GOCMD) test
 
-.PHONY: all clean test
+.PHONY: all clean test proxy recipient
 all: proxy recipient
 
-proxy: proxy/proxy.go
-	CGO_ENABLED=0 GOARCH=amd64 $(GOBUILD) -o $(BIN)/proxy -v $^
+proxy:
+	CGO_ENABLED=0 GOARCH=amd64 $(GOBUILD) -o $(BIN)/proxy -v ./proxy
 
-recipient: recipient/recipient.go
-	CGO_ENABLED=0 GOARCH=amd64 $(GOBUILD) -o $(BIN)/recipient -v $^
+recipient:
+	CGO_ENABLED=0 GOARCH=amd64 $(GOBUILD) -o $(BIN)/recipient -v ./recipient
 
 test:
 	openssl genrsa -out mixes/test_private.pem 2048
