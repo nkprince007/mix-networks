@@ -51,9 +51,9 @@ func forwardMessage(msg mixes.EncryptedMessage) {
 	//TODO: forward to recipient here
 }
 
-func handleReqsReadyToForward(readyToForwardChannel chan []MessageBatch) {
+func handleReqsReadyToForward(readyToForwardChannel chan mixes.MessageBatch) {
 	for msgBatch := range readyToForwardChannel {
-		for msg := range msgBatch {
+		for _, msg := range msgBatch.Messages {
 			forwardMessage(msg)
 		}
 	}
@@ -76,7 +76,7 @@ func main() {
 	}
 
 	mix := getMix()
-	go handleReqsReadyToForward(mix.readyToForwardChannel())
+	go handleReqsReadyToForward(mix.ReadyToForwardChannel())
 
 	for {
 		conn, err := ln.Accept()

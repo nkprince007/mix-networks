@@ -19,13 +19,12 @@ type EncryptedMessage struct {
 }
 
 type MessageBatch struct {
-	messages []EncryptedMessage
+	Messages []EncryptedMessage
 }
 
 type MixNew interface {
-	name(EncryptedMessage)
 	AddMessage(EncryptedMessage)
-	readyToForwardChannel() chan []MessageBatch
+	ReadyToForwardChannel() chan MessageBatch
 }
 
 type ReqSender interface {
