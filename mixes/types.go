@@ -20,11 +20,3 @@ type Mix interface {
 	ReadyToForwardChannel() chan MessageBatch
 	Init()
 }
-
-type ReqSender interface {
-	AddRequest(EncryptedMessage)
-}
-
-type ReqReciever interface {
-	ProcessRequest(EncryptedMessage)
-}
