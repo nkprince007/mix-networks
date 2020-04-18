@@ -5,19 +5,19 @@ import (
 )
 
 func TestEncryption(t *testing.T) {
-	mixPublicKey := ReadPublicKey("./test_public.pem")
-	mixPrivateKey := ReadPrivateKey("./test_private.pem")
+	mixPublicKey := ReadPublicKey("../.keys/proxy/public.pem")
+	mixPrivateKey := ReadPrivateKey("../.keys/proxy/private.pem")
 	message := Message{"This is a test message", ":8000"}
 
 	firstLayerEncMsg := EncryptWithPublicKey(&message, mixPublicKey)
 	tmpMsg := firstLayerEncMsg.Wrap("hello")
 	secondLayerEncMsg := EncryptWithPublicKey(&tmpMsg, mixPublicKey)
 
-	decryptedMessage1 := DecryptWithPrivateKey(&secondLayerEncMsg, mixPrivateKey)
+	decryptedMessage1, _ := DecryptWithPrivateKey(&secondLayerEncMsg, mixPrivateKey)
 	firstLayerEncMsg = decryptedMessage1.Unwrap()
-	decryptedMessage := DecryptWithPrivateKey(&firstLayerEncMsg, mixPrivateKey)
+	decryptedMessage, _ := DecryptWithPrivateKey(&firstLayerEncMsg, mixPrivateKey)
 
-	if message != decryptedMessage {
+	if message != *decryptedMessage {
 		t.Error("Encrypted and decrypted messages are not the same:", message, decryptedMessage)
 	}
 }

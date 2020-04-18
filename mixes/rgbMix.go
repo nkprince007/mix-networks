@@ -44,9 +44,9 @@ func (m *RgbMix) Init() {
 	if m.readyToForwardChannel == nil {
 		m.readyToForwardChannel = make(chan MessageBatch, 200) //TODO: Arbitrary size, should we make it configurable?
 	}
-	m.ProxyPublicKey = ReadPublicKey("../keys/proxy/public.pem")
-	m.ProxyPrivateKey = ReadPrivateKey("../keys/proxy/private.pem")
-	m.GreenMessageRecieverPublicKey = ReadPublicKey("../keys/recipient/public.pem")
+	m.ProxyPublicKey = ReadPublicKey("../.keys/proxy/public.pem")
+	m.ProxyPrivateKey = ReadPrivateKey("../.keys/proxy/private.pem")
+	m.GreenMessageRecieverPublicKey = ReadPublicKey("../.keys/recipient/public.pem")
 }
 
 func initPeriodTicker(m *RgbMix) {
@@ -115,8 +115,8 @@ func (m *RgbMix) ComposeRedMessage() EncryptedMessage {
 }
 
 func (m *RgbMix) ProcessRequest(msg EncryptedMessage) {
-	decryptedMsg := DecryptWithPrivateKey(&msg, m.ProxyPrivateKey) //TODO: handle error during decryption
-	if decryptedMsg.Content == proxySecretRedMessage {
+	decryptedMsg, err := DecryptWithPrivateKey(&msg, m.ProxyPrivateKey)
+	if err != nil && decryptedMsg.Content == proxySecretRedMessage {
 		m.c.redMessagesRecieved++
 	} else {
 		m.c.blackMessagesRecieved++

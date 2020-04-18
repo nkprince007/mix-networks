@@ -86,14 +86,15 @@ func EncryptWithPublicKey(msg *Message, pub *rsa.PublicKey) EncryptedMessage {
 }
 
 // DecryptWithPrivateKey decrypts data with private key
-func DecryptWithPrivateKey(msg *EncryptedMessage, priv *rsa.PrivateKey) Message {
+func DecryptWithPrivateKey(msg *EncryptedMessage, priv *rsa.PrivateKey) (*Message, error) {
 	key := msg.Password
 	ciphertext := msg.Data
 	nonce := msg.Nonce
 
 	decrypted, err := rsa.DecryptOAEP(sha256.New(), rand.Reader, priv, key, nil)
 	if err != nil {
-		log.Fatalln("decryption error:", err.Error())
+		// log.Fatalln("decryption error:", err.Error())
+		return nil, err
 	}
 
 	block, err := aes.NewCipher(decrypted)
@@ -116,5 +117,5 @@ func DecryptWithPrivateKey(msg *EncryptedMessage, priv *rsa.PrivateKey) Message 
 	if err != nil {
 		log.Fatal("JSON decoding error:", err)
 	}
-	return message
+	return &message, nil
 }

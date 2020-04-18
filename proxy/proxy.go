@@ -65,7 +65,7 @@ func (p *Proxy) handleRequest(conn net.Conn) {
 }
 
 func (p *Proxy) forwardMessage(encryptedMessage mixes.EncryptedMessage) {
-	decryptedMsg := mixes.DecryptWithPrivateKey(&encryptedMessage, p.privKey)
+	decryptedMsg, _ := mixes.DecryptWithPrivateKey(&encryptedMessage, p.privKey)
 	recipientAddr := decryptedMsg.Addr
 	recipientMessage := decryptedMsg.Unwrap()
 	mixes.SendMessage(&recipientMessage, recipientAddr)

@@ -37,7 +37,7 @@ func handleRequest(conn net.Conn, privKey *rsa.PrivateKey) {
 	encryptedMessage := &mixes.EncryptedMessage{}
 	json.NewDecoder(conn).Decode(encryptedMessage)
 
-	msg := mixes.DecryptWithPrivateKey(encryptedMessage, privKey)
+	msg, _ := mixes.DecryptWithPrivateKey(encryptedMessage, privKey)
 	fmt.Println("Received response: ", msg.Content)
 }
 
