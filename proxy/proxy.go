@@ -39,6 +39,8 @@ func parseArguments(args []string) (mix mixes.Mix, err error) {
 		mix = getCottrellMix()
 	case "RGB":
 		mix = getRGBMix()
+	case "poisson":
+		mix = getPoissonMix()
 	default:
 		usage()
 		err = errors.New("Unrecognized mix, ")

@@ -38,3 +38,9 @@ func getRGBMix() mixes.Mix {
 	mix.Init()
 	return mix
 }
+
+func getPoissonMix() mixes.Mix {
+	mix := &mixes.PoissonMix{}
+	mix.Init()
+	return mix
+}

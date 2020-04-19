@@ -3,6 +3,7 @@ package mixes
 type Message struct {
 	Content string `json:"content"`
 	Addr    string `json:"address"`
+	Delay   uint64 `json:"delay"`
 }
 
 type EncryptedMessage struct {

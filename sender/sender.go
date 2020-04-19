@@ -3,6 +3,8 @@ package main
 import (
 	"crypto/rsa"
 	"fmt"
+	"math/rand"
+	"os"
 	"strconv"
 	"time"
 
@@ -15,6 +17,18 @@ const (
 	proxyAddr       = ":8000"
 )
 
+var isPoisson = false
+var lambda float64
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+	lambda = rand.Float64()
+}
+
+func getDelay(lambda float64) uint64 {
+	return uint64(rand.ExpFloat64() / lambda)
+}
+
 func sendMessage(message string, proxyKey, recipientKey *rsa.PublicKey) {
 	// encrypt recipient message
 	msg := mixes.Message{Content: message, Addr: ""}
@@ -22,6 +36,9 @@ func sendMessage(message string, proxyKey, recipientKey *rsa.PublicKey) {
 
 	// wrap recipient message in one more encryption layer
 	msg = recipientEncMsg.Wrap(recipientAddr)
+	if isPoisson {
+		msg.Delay = getDelay(lambda) * 100 // converting to milliseconds
+	}
 	proxyEncMsg := mixes.EncryptWithPublicKey(&msg, proxyKey)
 
 	// sending request to proxy
@@ -30,6 +47,10 @@ func sendMessage(message string, proxyKey, recipientKey *rsa.PublicKey) {
 }
 
 func main() {
+	if len(os.Args) == 2 && os.Args[1] == "poisson" {
+		isPoisson = true
+	}
+
 	tick := time.Tick(messageInterval)
 	counter := 0
 	recipientPublicKey := mixes.ReadPublicKey("../.keys/recipient/public.pem")
