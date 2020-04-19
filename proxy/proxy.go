@@ -49,14 +49,14 @@ func parseArguments(args []string) (port int, mix mixes.Mix, err error) {
 	return
 }
 
-type Proxy struct {
+type proxy struct {
 	mix      mixes.Mix
 	privKey  *rsa.PrivateKey
 	addr     string
 	reqCount int
 }
 
-func (p *Proxy) run() {
+func (p *proxy) run() {
 	ln, err := net.Listen("tcp", p.addr)
 	if err != nil {
 		log.Fatal(err.Error())
@@ -73,14 +73,14 @@ func (p *Proxy) run() {
 	}
 }
 
-func (p *Proxy) handleRequest(conn net.Conn) {
+func (p *proxy) handleRequest(conn net.Conn) {
 	fmt.Println("Request recieved")
 	encryptedMessage := &mixes.EncryptedMessage{}
 	json.NewDecoder(conn).Decode(encryptedMessage)
 	p.mix.AddMessage(*encryptedMessage)
 }
 
-func (p *Proxy) handleRequestWithDrop(conn net.Conn) {
+func (p *proxy) handleRequestWithDrop(conn net.Conn) {
 	fmt.Println("Req no: " + strconv.Itoa(p.reqCount))
 	p.reqCount++
 	var dropProbability float32
@@ -97,7 +97,7 @@ func (p *Proxy) handleRequestWithDrop(conn net.Conn) {
 	}
 }
 
-func (p *Proxy) forwardMessage(encryptedMessage mixes.EncryptedMessage) {
+func (p *proxy) forwardMessage(encryptedMessage mixes.EncryptedMessage) {
 	decryptedMsg := mixes.DecryptWithPrivateKey(&encryptedMessage, p.privKey)
 	recipientAddr := decryptedMsg.Addr
 	recipientMessage := decryptedMsg.Unwrap()
@@ -106,7 +106,7 @@ func (p *Proxy) forwardMessage(encryptedMessage mixes.EncryptedMessage) {
 	}
 }
 
-func (p *Proxy) handleReqsReadyToForward(readyToForwardChannel chan mixes.MessageBatch) {
+func (p *proxy) handleReqsReadyToForward(readyToForwardChannel chan mixes.MessageBatch) {
 	for msgBatch := range readyToForwardChannel {
 		for _, msg := range msgBatch.Messages {
 			p.forwardMessage(msg)
@@ -123,6 +123,6 @@ func main() {
 	addr := "127.0.0.1:" + strconv.Itoa(port)
 	fmt.Printf("Starting proxy using private key: %s at %s\n", privateKeyPath, addr)
 	privKey := mixes.ReadPrivateKey(privateKeyPath)
-	proxy := Proxy{mix, privKey, addr, 0}
-	proxy.run()
+	p := proxy{mix, privKey, addr, 0}
+	p.run()
 }
