@@ -17,23 +17,20 @@ const privateKeyPath = "../.keys/proxy/private.pem"
 
 func usage() {
 	programName := os.Args[0]
-	fmt.Printf("Usage: %s <port> <mix>\n", programName)
-	fmt.Println("port:\tThe port number to start TCP listener on")
+	fmt.Printf("Usage: %s <mix>\n", programName)
 	fmt.Println("mix:\tThe mixing strategy to be used")
 	fmt.Println("\t\tshould be one of threshold, timed, cottrell or RGB")
 	fmt.Println()
 }
 
-func parseArguments(args []string) (port int, mix mixes.Mix, err error) {
-	if len(args) != 2 {
+func parseArguments(args []string) (mix mixes.Mix, err error) {
+	if len(args) != 1 {
 		usage()
 		err = errors.New("Invalid number of arguments")
 		return
 	}
 
-	port, err = strconv.Atoi(args[0])
-
-	switch args[1] {
+	switch args[0] {
 	case "threshold":
 		mix = getThresholdMix()
 	case "timed":
@@ -115,12 +112,12 @@ func (p *proxy) handleReqsReadyToForward(readyToForwardChannel chan mixes.Messag
 }
 
 func main() {
-	port, mix, err := parseArguments(os.Args[1:])
+	mix, err := parseArguments(os.Args[1:])
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	addr := "127.0.0.1:" + strconv.Itoa(port)
+	addr := ":8000"
 	fmt.Printf("Starting proxy using private key: %s at %s\n", privateKeyPath, addr)
 	privKey := mixes.ReadPrivateKey(privateKeyPath)
 	p := proxy{mix, privKey, addr, 0}
