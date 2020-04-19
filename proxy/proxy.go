@@ -17,19 +17,35 @@ const privateKeyPath = "../.keys/proxy/private.pem"
 
 func usage() {
 	programName := os.Args[0]
-	fmt.Printf("Usage: %s <port>\n", programName)
+	fmt.Printf("Usage: %s <port> <mix>\n", programName)
 	fmt.Println("port:\tThe port number to start TCP listener on")
+	fmt.Println("mix:\tThe mixing strategy to be used")
+	fmt.Println("\t\tshould be one of threshold, timed, cottrell or RGB")
 	fmt.Println()
 }
 
-func parseArguments(args []string) (port int, err error) {
-	if len(args) != 1 {
+func parseArguments(args []string) (port int, mix mixes.Mix, err error) {
+	if len(args) != 2 {
 		usage()
 		err = errors.New("Invalid number of arguments")
 		return
 	}
 
 	port, err = strconv.Atoi(args[0])
+
+	switch args[1] {
+	case "threshold":
+		mix = getThresholdMix()
+	case "timed":
+		mix = getTimedMix()
+	case "cottrell":
+		mix = getCottrellMix()
+	case "RGB":
+		mix = getRGBMix()
+	default:
+		usage()
+		err = errors.New("Unrecognized mix, ")
+	}
 	return
 }
 
@@ -99,8 +115,7 @@ func (p *Proxy) handleReqsReadyToForward(readyToForwardChannel chan mixes.Messag
 }
 
 func main() {
-	port, err := parseArguments(os.Args[1:])
-	//TODO: choose mix strategy based on input argument
+	port, mix, err := parseArguments(os.Args[1:])
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -108,7 +123,6 @@ func main() {
 	addr := "127.0.0.1:" + strconv.Itoa(port)
 	fmt.Printf("Starting proxy using private key: %s at %s\n", privateKeyPath, addr)
 	privKey := mixes.ReadPrivateKey(privateKeyPath)
-	mix := getRGBMix()
 	proxy := Proxy{mix, privKey, addr, 0}
 	proxy.run()
 }
