@@ -13,11 +13,11 @@ func TestEncryption(t *testing.T) {
 	tmpMsg := firstLayerEncMsg.Wrap("hello")
 	secondLayerEncMsg := EncryptWithPublicKey(&tmpMsg, mixPublicKey)
 
-	decryptedMessage1, _ := DecryptWithPrivateKey(&secondLayerEncMsg, mixPrivateKey)
+	decryptedMessage1 := DecryptWithPrivateKey(&secondLayerEncMsg, mixPrivateKey)
 	firstLayerEncMsg = decryptedMessage1.Unwrap()
-	decryptedMessage, _ := DecryptWithPrivateKey(&firstLayerEncMsg, mixPrivateKey)
+	decryptedMessage := DecryptWithPrivateKey(&firstLayerEncMsg, mixPrivateKey)
 
-	if message != *decryptedMessage {
+	if message != decryptedMessage {
 		t.Error("Encrypted and decrypted messages are not the same:", message, decryptedMessage)
 	}
 }

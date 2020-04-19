@@ -45,3 +45,7 @@ func shuffle(arr []EncryptedMessage) []EncryptedMessage {
 		})
 	return arr
 }
+
+func PickTrueWithProbability(probability float32) bool {
+	return rand.Float32() > probability
+}

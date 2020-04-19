@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/nkprince007/mix-networks/mixes"
 )
@@ -34,9 +35,10 @@ func parseArguments(args []string) (port int, err error) {
 }
 
 type Proxy struct {
-	mix     mixes.Mix
-	privKey *rsa.PrivateKey
-	addr    string
+	mix      mixes.Mix
+	privKey  *rsa.PrivateKey
+	addr     string
+	reqCount int
 }
 
 func (p *Proxy) run() {
@@ -53,7 +55,7 @@ func (p *Proxy) run() {
 		if err != nil {
 			log.Fatal(err.Error())
 		}
-		go p.handleRequest(conn)
+		go p.handleRequestWithDrop(conn)
 	}
 }
 
@@ -64,11 +66,32 @@ func (p *Proxy) handleRequest(conn net.Conn) {
 	p.mix.AddMessage(*encryptedMessage)
 }
 
+func (p *Proxy) handleRequestWithDrop(conn net.Conn) {
+	fmt.Println("Req no: " + strconv.Itoa(p.reqCount))
+	p.reqCount++
+	var dropProbability float32
+	if p.reqCount > 100 {
+		dropProbability = float32(float32(p.reqCount%100) / 100)
+	} else {
+		dropProbability = float32(float32(p.reqCount) / 100)
+	}
+	dropMessage := !mixes.PickTrueWithProbability(dropProbability)
+	if !dropMessage {
+		encryptedMessage := &mixes.EncryptedMessage{}
+		json.NewDecoder(conn).Decode(encryptedMessage)
+		p.mix.AddMessage(*encryptedMessage)
+	} else {
+		fmt.Println("Dropped request")
+	}
+}
+
 func (p *Proxy) forwardMessage(encryptedMessage mixes.EncryptedMessage) {
-	decryptedMsg, _ := mixes.DecryptWithPrivateKey(&encryptedMessage, p.privKey)
+	decryptedMsg := mixes.DecryptWithPrivateKey(&encryptedMessage, p.privKey)
 	recipientAddr := decryptedMsg.Addr
 	recipientMessage := decryptedMsg.Unwrap()
-	mixes.SendMessage(&recipientMessage, recipientAddr)
+	if recipientAddr != "" {
+		mixes.SendMessage(&recipientMessage, recipientAddr)
+	}
 }
 
 func (p *Proxy) handleReqsReadyToForward(readyToForwardChannel chan mixes.MessageBatch) {
@@ -77,6 +100,14 @@ func (p *Proxy) handleReqsReadyToForward(readyToForwardChannel chan mixes.Messag
 			p.forwardMessage(msg)
 		}
 	}
+}
+
+func GetRGBMix() mixes.Mix {
+	mix := &mixes.RgbMix{
+		PeriodMillis: 5000 * time.Millisecond,
+	}
+	mix.Init()
+	return mix
 }
 
 func main() {
@@ -89,7 +120,7 @@ func main() {
 	addr := "127.0.0.1:" + strconv.Itoa(port)
 	fmt.Printf("Starting proxy using private key: %s at %s\n", privateKeyPath, addr)
 	privKey := mixes.ReadPrivateKey(privateKeyPath)
-	mix := getCottrellMix()
-	proxy := Proxy{mix, privKey, addr}
+	mix := GetRGBMix()
+	proxy := Proxy{mix, privKey, addr, 0}
 	proxy.run()
 }
