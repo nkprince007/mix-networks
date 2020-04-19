@@ -14,6 +14,7 @@ import (
 )
 
 const privateKeyPath = "../.keys/proxy/private.pem"
+const dropRequestsArg = "drop"
 
 func usage() {
 	programName := os.Args[0]
@@ -23,8 +24,8 @@ func usage() {
 	fmt.Println()
 }
 
-func parseArguments(args []string) (mix mixes.Mix, err error) {
-	if len(args) != 1 {
+func parseArguments(args []string) (mix mixes.Mix, err error, dropRequests bool) {
+	if len(args) == 0 || len(args) > 2 {
 		usage()
 		err = errors.New("Invalid number of arguments")
 		return
@@ -45,6 +46,11 @@ func parseArguments(args []string) (mix mixes.Mix, err error) {
 		usage()
 		err = errors.New("Unrecognized mix, ")
 	}
+
+	dropRequests = false
+	if len(args) == 2 {
+		dropRequests = (args[1] == dropRequestsArg)
+	}
 	return
 }
 
@@ -52,6 +58,7 @@ type proxy struct {
 	mix      mixes.Mix
 	privKey  *rsa.PrivateKey
 	addr     string
+	dropReqs bool
 	reqCount int
 }
 
@@ -68,7 +75,11 @@ func (p *proxy) run() {
 		if err != nil {
 			log.Fatal(err.Error())
 		}
-		go p.handleRequestWithDrop(conn)
+		if p.dropReqs {
+			go p.handleRequestWithDrop(conn)
+		} else {
+			go p.handleRequest(conn)
+		}
 	}
 }
 
@@ -114,7 +125,7 @@ func (p *proxy) handleReqsReadyToForward(readyToForwardChannel chan mixes.Messag
 }
 
 func main() {
-	mix, err := parseArguments(os.Args[1:])
+	mix, err, dropReqs := parseArguments(os.Args[1:])
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -122,6 +133,6 @@ func main() {
 	addr := ":8000"
 	fmt.Printf("Starting proxy using private key: %s at %s\n", privateKeyPath, addr)
 	privKey := mixes.ReadPrivateKey(privateKeyPath)
-	p := proxy{mix, privKey, addr, 0}
+	p := proxy{mix, privKey, addr, dropReqs, 0}
 	p.run()
 }
