@@ -9,7 +9,6 @@ import (
 	"net"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/nkprince007/mix-networks/mixes"
 )
@@ -42,7 +41,6 @@ type Proxy struct {
 }
 
 func (p *Proxy) run() {
-
 	ln, err := net.Listen("tcp", p.addr)
 	if err != nil {
 		log.Fatal(err.Error())
@@ -77,9 +75,7 @@ func (p *Proxy) handleRequestWithDrop(conn net.Conn) {
 	}
 	dropMessage := !mixes.PickTrueWithProbability(dropProbability)
 	if !dropMessage {
-		encryptedMessage := &mixes.EncryptedMessage{}
-		json.NewDecoder(conn).Decode(encryptedMessage)
-		p.mix.AddMessage(*encryptedMessage)
+		p.handleRequest(conn)
 	} else {
 		fmt.Println("Dropped request")
 	}
@@ -102,14 +98,6 @@ func (p *Proxy) handleReqsReadyToForward(readyToForwardChannel chan mixes.Messag
 	}
 }
 
-func GetRGBMix() mixes.Mix {
-	mix := &mixes.RgbMix{
-		PeriodMillis: 5000 * time.Millisecond,
-	}
-	mix.Init()
-	return mix
-}
-
 func main() {
 	port, err := parseArguments(os.Args[1:])
 	//TODO: choose mix strategy based on input argument
@@ -120,7 +108,7 @@ func main() {
 	addr := "127.0.0.1:" + strconv.Itoa(port)
 	fmt.Printf("Starting proxy using private key: %s at %s\n", privateKeyPath, addr)
 	privKey := mixes.ReadPrivateKey(privateKeyPath)
-	mix := GetRGBMix()
+	mix := getRGBMix()
 	proxy := Proxy{mix, privKey, addr, 0}
 	proxy.run()
 }

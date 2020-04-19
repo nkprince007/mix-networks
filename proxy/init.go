@@ -30,3 +30,11 @@ func getCottrellMix() mixes.Mix {
 	mix.Init()
 	return mix
 }
+
+func getRGBMix() mixes.Mix {
+	mix := &mixes.RgbMix{
+		PeriodMillis: 5000 * time.Millisecond,
+	}
+	mix.Init()
+	return mix
+}
