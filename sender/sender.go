@@ -37,7 +37,7 @@ func sendMessage(message string, proxyKey, recipientKey *rsa.PublicKey) {
 	// wrap recipient message in one more encryption layer
 	msg = recipientEncMsg.Wrap(recipientAddr)
 	if isPoisson {
-		msg.Delay = getDelay(lambda) * 100 // converting to milliseconds
+		msg.Delay = getDelay(lambda) * 1000 // converting to milliseconds
 	}
 	proxyEncMsg := mixes.EncryptWithPublicKey(&msg, proxyKey)
 
@@ -60,7 +60,11 @@ func main() {
 		select {
 		case <-tick:
 			counter++
-			go sendMessage(strconv.Itoa(counter), proxyPublicKey, recipientPublicKey)
+			message := strconv.Itoa(counter)
+			if len(os.Args) > 2 {
+				message = os.Args[2] + " " + message
+			}
+			go sendMessage(message, proxyPublicKey, recipientPublicKey)
 			if counter == 5 {
 				break
 			}
